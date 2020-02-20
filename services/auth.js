@@ -13,6 +13,7 @@ var authService = {
         {
             expiresIn: '1h'
         });
+        return token;
     },
 
     verifyUser: function(token) {
@@ -20,7 +21,7 @@ var authService = {
             let decoded = jwt.verify(token, 'secretKey');
             return models.users.findByPk(decoded.UserId)
         } catch {
-            console.log(err);
+            console.log('err');
             return null;
         }
     },

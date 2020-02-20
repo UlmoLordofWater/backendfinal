@@ -1,5 +1,10 @@
 <ul>
     <li>Name: {{FirstName}}{{LastName}}</li>
     <li>Username: {{Username}} Email: {{Email}}</li>
-    <li>Status: {{Status}}</li>
+    <hr>
+    <li>{{PostTitle}}</li>
+    <div>{{PostBody}}</div>
+    <form id="logout" name="logout" method="GET" action="/users/logout">
+        <button type="submit">Logout</button>
+    </form>
 </ul>

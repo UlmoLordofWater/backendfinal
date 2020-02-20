@@ -26,7 +26,7 @@ router.post('/signup', function(req, res, next) {
   })
   .spread(function(result, created) {
     if (created) {
-      res.send('User successfully created');
+      res.redirect('login');
     } else {
       res.send('This user already exists');
     }
@@ -53,7 +53,7 @@ router.post('/login', function(req, res, next) {
         if (passwordMatch) {
           let token = authService.signUser(user);
           res.cookie('jwt', token);
-          res.send('Login successful');
+          res.redirect('profile')
         } else {
           console.log('Wrong password');
           res.redirect('login');
@@ -65,35 +65,103 @@ router.post('/login', function(req, res, next) {
 router.get('/profile', function(req, res, next) {
   let token = req.cookies.jwt;
   if (token) {
-    authService.verifyUser(token).then(user =>{
+    authService.verifyUser(token)
+    .then(user => {
       if (user) {
-        res.send(JSON.stringify(user));
+        models.users.findAll({
+          where: { UserId: user.UserId},
+          include: [{model: models.posts}]
+        }).then(data => {
+          if (data) {
+            res.render('profile', {
+              FirstName: user.FirstName,
+              LastName: user.LastName,
+              Email: user.Email,
+              Username: user.Username
+            });
+          } else {
+            res.send('Must be logged in');
+          }
+        })
       } else {
-        res.status(401);
-        res.send('Must be logged in');
+        res.send('Must be logged in'); 
       }
     })
   } else {
-    res.status(401);
-  res.send('Must be logged in');
+    res.redirect('/login');
   }
 });
 
 router.get('/logout', function(req, res, next) {
   res.cookie('jwt', '', {expires: new Date(0)});
   res.send('Logged Out');
+  res.redirect('/login');
 });
 
 router.get('/admin', function(req, res, next) {
-
+  if (req.user) {
+    models.users
+      .findByPk(parseInt(req.user.UserId))
+      .then(userFoundInDatabase => {
+        if (userFoundInDatabase.Admin == true) {
+          models.users.findByPk(parseInt(req.params.id)).then(
+            userInPram => {
+              res.render('specificUser', {
+                FirstName: userInPram.FirstName,
+                LastName: userInPram.LastName,
+                Email: userInPram.Email,
+                Username: userInPram.Username,
+                Admin: userInPram.Admin,
+                UserId: userInPram.UserId,
+                Password: userInPram.Password,
+                Admin: userInPram.Admin,
+                createdAt: userInPram.createdAt,
+                updatedAt: userInPram.updatedAt
+              });
+            }
+          )
+        } else {
+          res.send("You are not authorized to access the page.");
+        }
+      });
+  } else {
+    res.redirect('/users/login')
+  }
 });
 
 router.get('/admin/editUser/:id', function(req, res, next) {
-
+  if (req.user) {
+    models.users
+      .findByPk(parseInt(req.user.UserId))
+      .then(user => {
+        models.users
+        .findAll({})
+        .then(listUsers => {
+          if (user) {
+            if (user.Admin == true) {
+              res.render('listUsers', {users: listUsers});
+            } else {
+              res.send("You are not authorized to access the page.");
+            }
+          } else {
+            res.send("User not found.")
+          }
+        })
+      })
+  } else {
+    res.redirect('/users/login')
+  }
 });
 
 router.delete('/admin/editUser/:id', function(req, res, next) {
-
+  let id = parseInt(req.params.id);
+  models.users.findByPk(id)
+    .then(deleteUser => {
+      return models.users.update(
+        { Deleted: !deleteUser.Deleted },
+        { where: { UserId: id } }
+      )
+    }).then(() => res.redirect('/users'))
 });
 
 

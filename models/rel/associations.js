@@ -1,5 +1,5 @@
 module.exports = function(models) {
-    models.users.belongsToMany(models.posts, {
+    models.users.belongsTo(models.posts, {
         foreignKey: 'UserId'
     });
 }
